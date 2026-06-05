@@ -12,7 +12,15 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const stored = localStorage.getItem('user');
     if (stored) {
-      const parsed = JSON.parse(stored);
+      let parsed;
+      try {
+        parsed = JSON.parse(stored);
+      } catch (error) {
+        localStorage.removeItem('user');
+        setLoading(false);
+        return;
+      }
+
       setUser(parsed);
       api.get('/auth/me')
         .then((res) => {
