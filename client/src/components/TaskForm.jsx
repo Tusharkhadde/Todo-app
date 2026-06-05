@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
 
+const PRIORITIES = [
+  { value: 'low', label: 'Low', icon: '↓' },
+  { value: 'medium', label: 'Medium', icon: '–' },
+  { value: 'high', label: 'High', icon: '↑' },
+];
+
 const TaskForm = ({ onSubmit, initialData, onCancel }) => {
-  const [form, setForm] = useState({ title: '', description: '' });
+  const [form, setForm] = useState({ title: '', description: '', priority: 'medium' });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (initialData) {
-      setForm({ title: initialData.title, description: initialData.description || '' });
+      setForm({
+        title: initialData.title,
+        description: initialData.description || '',
+        priority: initialData.priority || 'medium',
+      });
     }
   }, [initialData]);
 
@@ -22,8 +32,8 @@ const TaskForm = ({ onSubmit, initialData, onCancel }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    onSubmit({ title: form.title.trim(), description: form.description.trim() });
-    if (!initialData) setForm({ title: '', description: '' });
+    onSubmit({ title: form.title.trim(), description: form.description.trim(), priority: form.priority });
+    if (!initialData) setForm({ title: '', description: '', priority: 'medium' });
   };
 
   return (
@@ -57,6 +67,23 @@ const TaskForm = ({ onSubmit, initialData, onCancel }) => {
           rows="3"
         />
         {errors.description && <span className="error-text">{errors.description}</span>}
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label>Priority</label>
+          <div className="priority-selector">
+            {PRIORITIES.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                className={`priority-btn priority-${p.value}${form.priority === p.value ? ' active' : ''}`}
+                onClick={() => setForm({ ...form, priority: p.value })}
+              >
+                {p.icon} {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="form-actions">
         <button type="submit" className="btn btn-primary">
