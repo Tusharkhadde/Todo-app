@@ -9,7 +9,7 @@ router.use(protect);
 
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, search, status } = req.query;
+    const { page = 1, limit = 10, search, status, priority } = req.query;
     const query = { userId: req.user._id };
 
     if (search) {
@@ -21,6 +21,10 @@ router.get('/', async (req, res) => {
 
     if (status && ['pending', 'completed'].includes(status)) {
       query.status = status;
+    }
+
+    if (priority && ['low', 'medium', 'high'].includes(priority)) {
+      query.priority = priority;
     }
 
     const total = await Task.countDocuments(query);
@@ -59,6 +63,7 @@ router.post(
       .isLength({ max: 100 }).withMessage('Title cannot exceed 100 characters'),
     body('description').optional().trim().isLength({ max: 500 })
       .withMessage('Description cannot exceed 500 characters'),
+    body('priority').optional().isIn(['low', 'medium', 'high']).withMessage('Invalid priority'),
   ],
   async (req, res) => {
     try {
@@ -67,10 +72,11 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { title, description } = req.body;
+      const { title, description, priority } = req.body;
       const task = await Task.create({
         title,
         description: description || '',
+        priority: priority || 'medium',
         userId: req.user._id,
       });
 
@@ -83,7 +89,7 @@ router.post(
 
 router.put('/:id', async (req, res) => {
   try {
-    const { title, description, status } = req.body;
+    const { title, description, status, priority } = req.body;
     const task = await Task.findOne({ _id: req.params.id, userId: req.user._id });
 
     if (!task) {
@@ -107,11 +113,19 @@ router.put('/:id', async (req, res) => {
       task.description = description;
     }
 
+    if (priority !== undefined) {
+      if (!['low', 'medium', 'high'].includes(priority)) {
+        return res.status(400).json({ message: 'Invalid priority' });
+      }
+      task.priority = priority;
+    }
+
     if (status !== undefined) {
       if (!['pending', 'completed'].includes(status)) {
         return res.status(400).json({ message: 'Invalid status' });
       }
       task.status = status;
+      task.completedAt = status === 'completed' ? new Date() : null;
     }
 
     const updatedTask = await task.save();
